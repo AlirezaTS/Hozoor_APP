@@ -1,9 +1,16 @@
 package com.example.hozoor2;
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.location.Criteria;
+import android.location.Location;
+import android.location.LocationManager;
+import android.provider.Settings;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -20,8 +27,12 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class EnterExitActivity extends AppCompatActivity {
 
-    private String token,name;
+    private String token, name;
     String baseurl;
+    Context context = this;
+//    LocationManager locationManager;
+//    private String provider;
+
     SharedPreferences sp;
     boolean type;
     Button button;
@@ -30,13 +41,16 @@ public class EnterExitActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_enter_exit);
+        if (!GpsCheck()) {
+            showGPSDialog();
+        }
         baseurl = BuildConfig.URL_API;
         sp = getSharedPreferences("user_data", MODE_PRIVATE);
         token = sp.getString("token", null);
-        name = sp.getString("name",null);
+        name = sp.getString("name", null);
         TextView tvName = findViewById(R.id.tvName);
-        tvName.setText(name+ " خوش آمدید");
-        if(token == null){
+        tvName.setText(name + " خوش آمدید");
+        if (token == null) {
             finish();
         }
         checkToken(token);
@@ -44,9 +58,34 @@ public class EnterExitActivity extends AppCompatActivity {
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+//                Criteria criteria = new Criteria();
+//                provider = locationManager.getBestProvider(criteria, false);
+//                if (ActivityCompat.checkSelfPermission(EnterExitActivity.this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(EnterExitActivity.this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+//                    return;
+//                }
+//                Location location = locationManager.getLastKnownLocation(provider);
                 send_token_to_server(token,type);
             }
         });
+    }
+
+    public Boolean GpsCheck() {
+        boolean aBoolean;
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        return aBoolean = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+    }
+
+    private void showGPSDialog() {
+        new AlertDialog.Builder(context).setTitle("لطفا GPS خود را روشن کنید")
+                .setPositiveButton("روشن", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        context.startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+                    }
+                })
+                .setNegativeButton("لغو", null)
+                .setCancelable(false)
+                .show();
     }
     private void checkToken(String token){
         Retrofit retrofit = new Retrofit.Builder()
